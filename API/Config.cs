@@ -59,8 +59,8 @@ public class Configuration {
 				};
 				m.PostUrl = i.Value.PostUrl ?? postUrl ?? m.PostUrl;
 				m.TicketUrl = i.Value.TicketUrl ?? ticketUrl ?? m.TicketUrl;
-				m.BaseRequest.Pid = i.Value.Pid;
-				m.PostbackUrl = i.Value.PostbackUrl ??= m.BaseRequest.PostbackUrl ?? "";
+				m.Pid = i.Value.Pid ?? m.BaseRequest.Pid;
+				m.PostbackUrl = i.Value.PostbackUrl ?? m.BaseRequest.PostbackUrl;
 
 				data[j.Secret] = new(){ Secret=j.Secret, Name=i.Key, Cfg = new (m), AllowV1=j.AllowV1 };
 			}

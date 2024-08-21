@@ -15,8 +15,8 @@ public class Config(ConfigItem cfg) {
 	private Cert Cert { get; } = new(cfg.Cert?.Cert ?? "", cfg.Cert?.Pass ?? "");
 	public string PostUrl => Cfg.PostUrl;
 	public string TicketUrl => Cfg.TicketUrl;
-	public string PostbackUrl => Cfg.PostbackUrl;
-	public string? Pid => Cfg.BaseRequest?.Pid;
+	public string? PostbackUrl => Cfg.PostbackUrl;
+	public string? Pid => Cfg.Pid;
 	public AuthenticationRequest? BaseRequest => Cfg.BaseRequest;
 	public XmlDocument SignXml<T>(T req) where T : Request {
 		var doc = new XmlDocument();
@@ -35,7 +35,8 @@ public class CertItem {
 
 public class ConfigItem {
 	public CertItem? Cert { get; set; }
-	public string PostbackUrl { get; set; } = "";
+	public string? PostbackUrl { get; set; }
+	public string? Pid { get; set; }
 	public string PostUrl { get; set; } = "https://www.epaslaugos.lt/portal/authenticationServices/auth";
 	public string TicketUrl { get; set; } = "https://www.epaslaugos.lt/portal/external/services/authentication/v2/?ticket=";
 	public AuthenticationRequest? BaseRequest { get; set; }
