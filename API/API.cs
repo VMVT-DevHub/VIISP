@@ -1,8 +1,11 @@
 using Microsoft.Extensions.Configuration;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using System.Xml.Serialization;
+using System.Xml;
 using VIISP;
 using VIISP.App;
+using static System.Net.Mime.MediaTypeNames;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddUserSecrets<Program>(true);
@@ -38,7 +41,8 @@ app.Map("/auth/v1/{key}/data", async (HttpContext ctx, string key, Guid ticket, 
 	if (cfg.GetCfg(key, out var i) && i.Cfg is not null) {
 		if (i.AllowV1) {
 			var dt = await new AuthenticationDataRequest(ticket) { Pid = i.Cfg.Pid }.Execute(i.Cfg, ct);
-			if (dt.Error is null) await ctx.Response.WriteAsJsonAsync(new DataResponse(dt), ct);
+			if (cfg.Debug) { Debug.Print(dt); }
+			if (dt.Error is null) await ctx.Response.WriteAsJsonAsync(new DataResponse(dt).Login(cfg.ConnStr, i.Name, i.ShowAk), ct);
 			else { ctx.Response.StatusCode = StatusCodes.Status400BadRequest; await ctx.Response.WriteAsJsonAsync(dt.Error, ct); }
 		}
 		else ctx.Response.StatusCode = StatusCodes.Status403Forbidden;
@@ -68,7 +72,8 @@ app.MapGet("/auth/v2/{key}/{token}", async (HttpContext ctx, string key, Guid to
 	if (cfg.GetCfg(key, out var i) && i.Cfg is not null) {
 		if (cfg.GetToken(token, out var j) && j.ExpiresOn > DateTime.UtcNow) {
 			var dt = await new AuthenticationDataRequest(j.Ticket) { Pid = i.Cfg.Pid }.Execute(i.Cfg, ct);
-			if (dt.Error is null) await ctx.Response.WriteAsJsonAsync(new DataResponse(dt), ct);
+			if (cfg.Debug) { Debug.Print(dt); }
+			if (dt.Error is null) await ctx.Response.WriteAsJsonAsync(new DataResponse(dt).Login(cfg.ConnStr, i.Name, i.ShowAk), ct);
 			else { ctx.Response.StatusCode = StatusCodes.Status400BadRequest; await ctx.Response.WriteAsJsonAsync(dt.Error, ct); }
 		}
 		else ctx.Response.StatusCode = StatusCodes.Status404NotFound;
@@ -84,4 +89,17 @@ app.Run();
 public class CustomDateTimeConverter : JsonConverter<DateTime> {
 	public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => DateTime.TryParse(reader.GetString(), out var dt) ? dt : default;
 	public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options) => writer.WriteStringValue(value.ToString("yyyy-MM-ddTHH:mm:ssZ"));
+}
+
+public static class Debug {
+	private static readonly object writeLock = new();
+	public static void Print(object data) {
+		var file = $"debug/{DateTime.UtcNow:yyyyy-MM-dd}.log";
+		if (!File.Exists(file)) { File.Create(file).Close(); }
+
+		lock (writeLock) {
+			using var writer = File.AppendText(file);
+			writer.WriteLine($"{DateTime.UtcNow} {JsonSerializer.Serialize(data)}");
+		}
+	}
 }

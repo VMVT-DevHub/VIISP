@@ -26,6 +26,7 @@ public class App {
 	public string? PostUrl { get; set; }
 	public string? TicketUrl { get; set; }
 	public bool AllowV1 { get; set; }
+	public bool ShowAk { get; set; }
 
 }
 
@@ -34,6 +35,7 @@ public class APS {
 	public string? Secret { get; set; }
 	public Config? Cfg { get; set; }
 	public bool AllowV1 { get; set; }
+	public bool ShowAk { get; set; }
 }
 
 public class TicketResponse_v1 {

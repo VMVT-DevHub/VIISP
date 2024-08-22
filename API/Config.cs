@@ -5,6 +5,7 @@ namespace VIISP.App;
 
 public class Configuration {
 	private WebApplication App { get; }
+	public string ConnStr { get; set; }
 	public DateTime NextReload { get; private set; }
 	public DateTime LastReload { get; private set; }
 	public bool Debug { get; private set; }
@@ -46,7 +47,10 @@ public class Configuration {
 		var ticketUrl = cfg["TicketUrl"];
 
 		Debug = bool.TryParse(cfg["Debug"], out var dbg) && dbg;
+		if (Debug && !Directory.Exists("debug")) Directory.CreateDirectory("debug");
+
 		TokenExpiration = int.TryParse(cfg["TokenExpiration"], out var tkx) ? tkx : 300;
+		ConnStr = cfg["ConnStr"] ?? "";
 
 		var data = new Dictionary<string, APS>();
 
@@ -62,7 +66,7 @@ public class Configuration {
 				m.Pid = i.Value.Pid ?? m.BaseRequest.Pid;
 				m.PostbackUrl = i.Value.PostbackUrl ?? m.BaseRequest.PostbackUrl;
 
-				data[j.Secret] = new(){ Secret=j.Secret, Name=i.Key, Cfg = new (m), AllowV1=j.AllowV1 };
+				data[j.Secret] = new(){ Secret=j.Secret, Name=i.Key, Cfg = new (m), AllowV1=j.AllowV1, ShowAk=j.ShowAk };
 			}
 		}
 		Data=data;

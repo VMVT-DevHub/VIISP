@@ -198,11 +198,12 @@ public class AuthRspUserInfoVal { [XmlElement("stringValue")] public string? Str
 
 /// <summary>Vartotojo informacija</summary>
 public class DataResponse {
+	[JsonPropertyName("id")] public Guid? Id { get; set; }
 	[JsonPropertyName("name")] public string? Name { get; set; }
 	[JsonPropertyName("firstName")] public string? FName { get; set; }
 	[JsonPropertyName("lastName")] public string? LName { get; set; }
 	[JsonPropertyName("email")] public string? Email { get; set; }
-	[JsonPropertyName("adresas")] public string? Address { get; set; }
+	[JsonPropertyName("address")] public string? Address { get; set; }
 	[JsonPropertyName("phoneNumber")] public string? Phone { get; set; }
 	[JsonPropertyName("birthday")] public DateTime? Birthday { get; set; }
 	[JsonPropertyName("lt-personal-code")] public string? AK { get; set; }
