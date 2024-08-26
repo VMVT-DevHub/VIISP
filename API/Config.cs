@@ -1,5 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.Json.Serialization;
+using System.Text.Json;
 
 namespace VIISP.App;
 
@@ -73,5 +75,26 @@ public class Configuration {
 		LastReload = DateTime.UtcNow;
 	}
 
-	public Configuration(WebApplication app){ App=app; Reload(); }
+	public Configuration(WebApplication app){ App=app; Reload(); ConnStr = app.Configuration["ConnStr"]??""; }
+}
+
+
+
+
+public class CustomDateTimeConverter : JsonConverter<DateTime> {
+	public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => DateTime.TryParse(reader.GetString(), out var dt) ? dt : default;
+	public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options) => writer.WriteStringValue(value.ToString("yyyy-MM-ddTHH:mm:ssZ"));
+}
+
+public static class Debug {
+	private static readonly object writeLock = new();
+	public static void Print(object data) {
+		var file = $"debug/{DateTime.UtcNow:yyyyy-MM-dd}.log";
+		if (!File.Exists(file)) { File.Create(file).Close(); }
+
+		lock (writeLock) {
+			using var writer = File.AppendText(file);
+			writer.WriteLine($"{DateTime.UtcNow} {JsonSerializer.Serialize(data)}");
+		}
+	}
 }

@@ -74,7 +74,7 @@ public class Cert {
 
 
 public class Request {
-	private static HttpClient HClient = new();
+	private static readonly HttpClient HClient = new();
 
 	//Todo: prevent DDOS
 

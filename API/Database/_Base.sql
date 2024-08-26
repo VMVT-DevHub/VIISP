@@ -1,9 +1,9 @@
 
 
+
 -- DB Setup
 
 DO LANGUAGE 'plpgsql' $$ BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'rairai'        ) THEN CREATE ROLE rairai; END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'apps'          ) THEN CREATE ROLE apps; END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '_master_admin' ) THEN CREATE ROLE _master_admin; END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'viisp_app'     ) THEN CREATE ROLE viisp_app WITH LOGIN INHERIT CONNECTION LIMIT -1 PASSWORD 'viisp_app'; END IF;
@@ -12,6 +12,9 @@ DO LANGUAGE 'plpgsql' $$ BEGIN
     GRANT CONNECT ON DATABASE master TO viisp_app;
     GRANT ALL ON DATABASE master TO _master_admin;
 END $$;
+
+-- CONNECT TO `master` DB
+
 
 -- Schema Setup
 

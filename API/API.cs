@@ -5,7 +5,6 @@ using System.Xml.Serialization;
 using System.Xml;
 using VIISP;
 using VIISP.App;
-using static System.Net.Mime.MediaTypeNames;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Configuration.AddUserSecrets<Program>(true);
@@ -21,8 +20,6 @@ builder.Services.ConfigureHttpJsonOptions(a => {
 var app = builder.Build();
 
 var cfg = new Configuration(app);
-
-Console.WriteLine(Guid.NewGuid());
 
 
 app.Map("/auth/v1/{key}/sign", async (HttpContext ctx, string key, CancellationToken ct) => {
@@ -84,22 +81,3 @@ app.MapGet("/auth/v2/{key}/{token}", async (HttpContext ctx, string key, Guid to
 app.Run();
 
 
-
-
-public class CustomDateTimeConverter : JsonConverter<DateTime> {
-	public override DateTime Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => DateTime.TryParse(reader.GetString(), out var dt) ? dt : default;
-	public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options) => writer.WriteStringValue(value.ToString("yyyy-MM-ddTHH:mm:ssZ"));
-}
-
-public static class Debug {
-	private static readonly object writeLock = new();
-	public static void Print(object data) {
-		var file = $"debug/{DateTime.UtcNow:yyyyy-MM-dd}.log";
-		if (!File.Exists(file)) { File.Create(file).Close(); }
-
-		lock (writeLock) {
-			using var writer = File.AppendText(file);
-			writer.WriteLine($"{DateTime.UtcNow} {JsonSerializer.Serialize(data)}");
-		}
-	}
-}
