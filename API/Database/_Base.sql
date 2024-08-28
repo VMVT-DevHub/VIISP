@@ -2,12 +2,12 @@
 
 
 -- DB Setup
+CREATE ROLE _master_admin;
+CREATE DATABASE master WITH OWNER = _master_admin ENCODING = 'UTF8' CONNECTION LIMIT = -1;
 
 DO LANGUAGE 'plpgsql' $$ BEGIN
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'apps'          ) THEN CREATE ROLE apps; END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = '_master_admin' ) THEN CREATE ROLE _master_admin; END IF;
     IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'viisp_app'     ) THEN CREATE ROLE viisp_app WITH LOGIN INHERIT CONNECTION LIMIT -1 PASSWORD 'viisp_app'; END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_database WHERE datname = 'master'     ) THEN CREATE DATABASE master WITH OWNER = _master_admin ENCODING = 'UTF8' CONNECTION LIMIT = -1; END IF;
     GRANT apps TO viisp_app;
     GRANT CONNECT ON DATABASE master TO viisp_app;
     GRANT ALL ON DATABASE master TO _master_admin;
@@ -31,9 +31,9 @@ END $$;
 -- Tables
 
 CREATE TABLE IF NOT EXISTS viisp.users (
-    user_id uuid NOT NULL DEFAULT gen_random_uuid(), user_ak bigint NOT NULL,
-    user_name varchar(255) NOT NULL, user_fname varchar(255) NOT NULL, user_lname varchar(255) NOT NULL,
-    user_address varchar(255), user_email varchar(255), user_phone varchar(30), user_country varchar(30),
+    user_id uuid NOT NULL DEFAULT gen_random_uuid(), user_ak bigint NOT NULL, user_name varchar(255) NOT NULL,
+    user_fname varchar(255) NOT NULL, user_lname varchar(255) NOT NULL, user_address varchar(255), user_email varchar(255), 
+    user_phone varchar(30), user_country varchar(30), user_real bool NOT NULL DEFAULT false;
     user_dt_add timestamp(0) NOT NULL DEFAULT timezone('utc'::text, now()), user_dt_modif timestamp(3) without time zone,
     CONSTRAINT viisp_users_pk PRIMARY KEY (user_id), CONSTRAINT viisp_users_ak UNIQUE (user_ak)
 );
@@ -64,6 +64,7 @@ DECLARE gid varchar(255); adr varchar(255); chng jsonb; BEGIN
     chng=viisp.log_change(chng,'email',NEW.user_email,OLD.user_email);
     chng=viisp.log_change(chng,'phone',NEW.user_phone,OLD.user_phone);
     chng=viisp.log_change(chng,'country',NEW.user_country,OLD.user_country);
+    chng=viisp.log_change(chng,'real',NEW.user_real,OLD.user_real);
     IF TG_OP = 'INSERT' THEN NEW.user_id = gen_random_uuid(); INSERT INTO viisp.log_modif (log_user,log_action,log_data) VALUES (NEW.user_id,'New',chng);
     ELSIF TG_OP = 'UPDATE' THEN
         IF OLD.user_id<>NEW.user_id THEN RAISE EXCEPTION 'ID keitimas negalimas'; END IF;
@@ -86,11 +87,11 @@ CREATE OR REPLACE FUNCTION viisp.user_login(ak bigint, app varchar, ip varchar, 
     DECLARE uid uuid; jar bigint; jst varchar=dt->>'lt-company-code'; BEGIN
     SELECT user_id into uid FROM viisp.users WHERE user_ak=ak;
     IF uid is not null THEN
-        UPDATE viisp.users SET user_name=COALESCE(dt->>'name',''), user_fname=COALESCE(dt->>'firstName',''), user_lname=COALESCE(dt->>'lastName',''), user_address=dt->>'address', user_phone=dt->>'phoneNumber', user_email=dt->>'email', user_country=dt->>'country'
-        WHERE user_id=uid AND ((dt->>'name' is not null AND dt->>'name'<>user_name) OR (dt->>'firstName' is not null AND dt->>'firstName'<>user_fname) OR (dt->>'lastName' is not null AND dt->>'lastName'<>user_lname) OR 
+        UPDATE viisp.users SET user_name=COALESCE(dt->>'name',''), user_fname=COALESCE(dt->>'firstName',''), user_lname=COALESCE(dt->>'lastName',''), user_address=dt->>'address', user_phone=dt->>'phoneNumber', user_email=dt->>'email', user_country=dt->>'country', user_real=true
+        WHERE user_id=uid AND ((dt->>'name' is not null AND dt->>'name'<>user_name) OR (dt->>'firstName' is not null AND dt->>'firstName'<>user_fname) OR (dt->>'lastName' is not null AND dt->>'lastName'<>user_lname) OR user_real=false OR
             (dt->>'address' is not null AND dt->>'address'<>user_address) OR (dt->>'phoneNumber' is not null AND dt->>'phoneNumber'<>user_phone) OR (dt->>'email' is not null AND dt->>'email'<>user_email) OR (dt->>'country' is not null AND dt->>'country'<>user_country));
-    ELSE INSERT INTO viisp.users (user_ak,user_name,user_fname,user_lname,user_address,user_phone,user_email,user_country) VALUES 
-            (ak,COALESCE(dt->>'name',''),COALESCE(dt->>'firstName',''),COALESCE(dt->>'lastName',''),dt->>'address',dt->>'phoneNumber',dt->>'email',dt->>'country') RETURNING user_id INTO uid;
+    ELSE INSERT INTO viisp.users (user_ak,user_name,user_fname,user_lname,user_address,user_phone,user_email,user_country,user_real) VALUES 
+            (ak,COALESCE(dt->>'name',''),COALESCE(dt->>'firstName',''),COALESCE(dt->>'lastName',''),dt->>'address',dt->>'phoneNumber',dt->>'email',dt->>'country',true) RETURNING user_id INTO uid;
     END IF; IF COALESCE(jst,'') <> '' AND jst ~ '^[0-9]+$' THEN jar:=CAST(jst AS bigint); END IF;
     INSERT INTO viisp.log_logins (log_app,log_user,log_jar,log_ip,log_ua,log_data) VALUES (app,uid,jar,ip,ua,dt);
     RETURN QUERY SELECT user_id, user_name, user_fname, user_lname, user_address, user_email, user_phone, user_country FROM viisp.users WHERE user_id=uid;

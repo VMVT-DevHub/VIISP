@@ -195,19 +195,65 @@ public class AuthRspUserInfoVal { [XmlElement("stringValue")] public string? Str
 
 
 
-
-/// <summary>Vartotojo informacija</summary>
 public class DataResponse {
 	[JsonPropertyName("id")] public Guid? Id { get; set; }
-	[JsonPropertyName("name")] public string? Name { get; set; }
+	[JsonPropertyName("ak")] public virtual long? AK { get; set; }
 	[JsonPropertyName("firstName")] public string? FName { get; set; }
 	[JsonPropertyName("lastName")] public string? LName { get; set; }
+}
+
+
+/// <summary>Vartotojo informacija V1</summary>
+public class DataResponse_v1 : DataResponse {
 	[JsonPropertyName("email")] public string? Email { get; set; }
 	[JsonPropertyName("address")] public string? Address { get; set; }
 	[JsonPropertyName("phoneNumber")] public string? Phone { get; set; }
-	[JsonPropertyName("birthday")] public DateTime? Birthday { get; set; }
-	[JsonPropertyName("lt-personal-code")] public string? AK { get; set; }
+	[JsonPropertyName("lt-personal-code")] public override long? AK { get; set; }
 	[JsonPropertyName("lt-company-code")] public string? CompanyCode { get; set; }
+	[JsonPropertyName("companyName")] public string? CompanyName { get; set; }
+	[JsonPropertyName("country")] public string? Country { get; set; }
+
+	public DataResponse_v1(AuthenticationDataResponse itm) {
+		if (itm.UserInformation is not null)
+			foreach (var i in itm.UserInformation) {
+				if (i.Value is not null)
+					switch (i.Name) {
+						case "firstName": FName = Request.FCase(i.Value?.StringValue); break;
+						case "lastName": LName = Request.FCase(i.Value?.StringValue); break;
+						case "address": Address = i.Value.StringValue; break;
+						case "email": Email = i.Value.StringValue; break;
+						case "phoneNumber": Phone = i.Value.StringValue; break;
+						case "companyName": CompanyName = i.Value.StringValue; break;
+					}
+			}
+		if (itm.AuthAttr is not null)
+			foreach (var i in itm.AuthAttr) {
+				switch (i.Name) {
+					case "lt-company-code": CompanyCode = i.Value; break;
+					case "lt-personal-code": AK = long.TryParse(i.Value, out var ak) ? ak : null; break;
+				}
+			}
+
+		if (itm.SourceData?.Params is not null)
+			foreach (var i in itm.SourceData.Params) {
+				switch (i.Name) {
+					case "VK_COUNTRY": Country = i.Value; break;
+					case "VK_USER_ID": AK = long.TryParse(i.Value, out var ak) ? ak : null; break;
+				}
+			}
+	}
+}
+
+
+
+/// <summary>Vartotojo informacija V2</summary>
+public class DataResponse_v2 : DataResponse {
+	[JsonPropertyName("name")] public string? Name { get; set; }
+	[JsonPropertyName("email")] public string? Email { get; set; }
+	[JsonPropertyName("address")] public string? Address { get; set; }
+	[JsonPropertyName("phone")] public string? Phone { get; set; }
+	[JsonPropertyName("birthday")] public DateTime? Birthday { get; set; }
+	[JsonPropertyName("companyCode")] public string? CompanyCode { get; set; }
 	[JsonPropertyName("companyName")] public string? CompanyName { get; set; }
 	[JsonPropertyName("country")] public string? Country { get; set; }
 	[JsonPropertyName("sndId")] public string? SndId { get; set; }
@@ -218,45 +264,46 @@ public class DataResponse {
 	[JsonPropertyName("proxyType")] public string? ProxyType { get; set; }
 	[JsonPropertyName("proxySource")] public string? ProxySource { get; set; }
 
-	public DataResponse(AuthenticationDataResponse itm){
+	public DataResponse_v2() { }
+	public DataResponse_v2(AuthenticationDataResponse itm) {
 		Provider = itm.AuthenticationProvider;
-		if(itm.UserInformation is not null)
-		foreach(var i in itm.UserInformation){
-			if(i.Value is not null)
-			switch(i.Name){
-				case "firstName": FName = Request.FCase(i.Value?.StringValue); break;
-				case "lastName": LName = Request.FCase(i.Value?.StringValue); break;
-				case "address": Address = i.Value.StringValue; break;
-				case "email": Email = i.Value.StringValue; break;
-				case "phoneNumber": Phone = i.Value.StringValue; break;
-				case "birthday": Birthday = i.Value.DateValue; break;
-				case "companyName": CompanyName = i.Value.StringValue; break;
-				case "proxyType": ProxyType = i.Value.StringValue; break;
-				case "proxySource": ProxySource = i.Value.StringValue; break;
+		if (itm.UserInformation is not null)
+			foreach (var i in itm.UserInformation) {
+				if (i.Value is not null)
+					switch (i.Name) {
+						case "firstName": FName = Request.FCase(i.Value?.StringValue); break;
+						case "lastName": LName = Request.FCase(i.Value?.StringValue); break;
+						case "address": Address = i.Value.StringValue; break;
+						case "email": Email = i.Value.StringValue; break;
+						case "phoneNumber": Phone = i.Value.StringValue; break;
+						case "birthday": Birthday = i.Value.DateValue; break;
+						case "companyName": CompanyName = i.Value.StringValue; break;
+						case "proxyType": ProxyType = i.Value.StringValue; break;
+						case "proxySource": ProxySource = i.Value.StringValue; break;
+					}
 			}
-		}
-		if(itm.AuthAttr is not null)
-		foreach(var i in itm.AuthAttr){
-			switch (i.Name) {
-				case "lt-company-code": CompanyCode = i.Value; break;
-				case "lt-personal-code": AK = i.Value; break;
+		if (itm.AuthAttr is not null)
+			foreach (var i in itm.AuthAttr) {
+				switch (i.Name) {
+					case "lt-company-code": CompanyCode = i.Value; break;
+					case "lt-personal-code": AK = long.TryParse(i.Value, out var ak) ? ak : null; break;
+				}
 			}
-		}
 
-		if(itm.SourceData?.Params is not null)
-		foreach(var i in itm.SourceData.Params){
-			switch (i.Name){
-				case "VK_USER_NAME": Name=Request.FCase(i.Value); break;
-				case "VK_COUNTRY": Country=i.Value; break;
-				case "VK_SND_ID": SndId=i.Value; break;
-				case "VK_REC_ID": RecId=i.Value; break;
-				case "VK_LANG": Language=i.Value; break;
-				case "VK_USER_ID": AK = i.Value; break;
-				case "VK_SERVICE": Service = i.Value; break;
-				case "CN": Service = i.Value; break;
-				case "O": SndId = i.Value; break;
+		if (itm.SourceData?.Params is not null)
+			foreach (var i in itm.SourceData.Params) {
+				switch (i.Name) {
+					case "VK_USER_NAME": Name = Request.FCase(i.Value); break;
+					case "VK_COUNTRY": Country = i.Value; break;
+					case "VK_SND_ID": SndId = i.Value; break;
+					case "VK_REC_ID": RecId = i.Value; break;
+					case "VK_LANG": Language = i.Value; break;
+					case "VK_USER_ID": AK = long.TryParse(i.Value, out var ak) ? ak : null; break;
+					case "VK_SERVICE": Service = i.Value; break;
+					case "CN": Service = i.Value; break;
+					case "O": SndId = i.Value; break;
+				}
 			}
-		}
 
 	}
 }

@@ -27,6 +27,7 @@ public class App {
 	public string? TicketUrl { get; set; }
 	public bool AllowV1 { get; set; }
 	public bool ShowAk { get; set; }
+	public bool GetUser { get; set; }
 
 }
 
@@ -36,6 +37,7 @@ public class APS {
 	public Config? Cfg { get; set; }
 	public bool AllowV1 { get; set; }
 	public bool ShowAk { get; set; }
+	public bool GetUser { get; set; }
 }
 
 public class TicketResponse_v1 {
@@ -51,4 +53,17 @@ public class TokenResponse {
 	public int ExpiresIn { get; set;}
 	public DateTime ExpiresOn { get; set; }
 	public string? AuthUrl { get; set; }
+}
+
+public class UserData {
+	[JsonPropertyName("id")] public Guid? Id { get; set; }
+	[JsonPropertyName("ak")] public long? AK { get; set; }
+	[JsonPropertyName("name")] public string? Name { get; set; }
+	[JsonPropertyName("firstName")] public string? FName { get; set; }
+	[JsonPropertyName("lastName")] public string? LName { get; set; }
+	[JsonPropertyName("email")] public string? Email { get; set; }
+	[JsonPropertyName("address")] public string? Address { get; set; }
+	[JsonPropertyName("phoneNumber")] public string? Phone { get; set; }
+	[JsonPropertyName("country")] public string? Country { get; set; }
+	[JsonPropertyName("real")] public bool Real { get; set; } = false;
 }

@@ -2,6 +2,8 @@ using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json.Serialization;
 using System.Text.Json;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using Microsoft.AspNetCore.DataProtection.KeyManagement;
 
 namespace VIISP.App;
 
@@ -68,7 +70,7 @@ public class Configuration {
 				m.Pid = i.Value.Pid ?? m.BaseRequest.Pid;
 				m.PostbackUrl = i.Value.PostbackUrl ?? m.BaseRequest.PostbackUrl;
 
-				data[j.Secret] = new(){ Secret=j.Secret, Name=i.Key, Cfg = new (m), AllowV1=j.AllowV1, ShowAk=j.ShowAk };
+				data[j.Secret] = new(){ Secret=j.Secret, Name=i.Key, Cfg = new (m), AllowV1=j.AllowV1, ShowAk=j.ShowAk, GetUser=j.GetUser };
 			}
 		}
 		Data=data;
@@ -97,4 +99,26 @@ public static class Debug {
 			writer.WriteLine($"{DateTime.UtcNow} {JsonSerializer.Serialize(data)}");
 		}
 	}
+}
+
+
+public static class RouteBuilders {
+	public static RouteHandlerBuilder GetTokenV2(this RouteHandlerBuilder builder, Configuration cfg) => builder.AddEndpointFilter(async (flt, next) => {
+		var ctx = flt.HttpContext;
+		if(ctx.Request.Path.StartsWithSegments("/auth/v2", out var pth) && pth.HasValue) {
+			var key = pth.Value.Split("/")[1];
+			if (!string.IsNullOrWhiteSpace(key) && cfg.GetCfg(key, out var i) && i.Cfg is not null) {
+				ctx.Items["Cfg"] = i;
+				return await next(flt);
+			}
+			ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
+		} else ctx.Response.StatusCode = StatusCodes.Status404NotFound;		
+		return null;
+	});
+
+	public static bool GetCfg(this HttpContext ctx, [MaybeNullWhen(false)] out APS result) {
+		if (ctx.Items["Cfg"] is APS aps) { result = aps; return true; }
+		result = null; return false;
+	}
+
 }
